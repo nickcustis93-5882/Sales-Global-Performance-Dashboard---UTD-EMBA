@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Global Performance Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <style>
+        /* CSS Variables for Dynamic Light/Dark Theme */
+        :root {
+            --bg-body: #f3f4f6;
+            --bg-card: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+            --input-bg: #ffffff;
+            --ribbon-bg: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            --ribbon-text: #14532d;
+            --ribbon-border: #bbf7d0;
+            --tooltip-bg: #ffffff;
+        }
+        
+        [data-theme="dark"] {
+            --bg-body: #111827;
+            --bg-card: #1f2937;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border-color: #374151;
+            --input-bg: #374151;
+            --ribbon-bg: linear-gradient(135deg, #064e3b, #14532d);
+            --ribbon-text: #dcfce7;
+            --ribbon-border: #166534;
+            --tooltip-bg: #1f2937;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        /* Theme Toggle Button */
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: var(--bg-card);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        .theme-toggle:hover {
+            background-color: var(--border-color);
+        }
+
+        /* Custom Executive Header */
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            margin-top: 10px;
+        }
+        .dashboard-title {
+            font-size: 32px;
+            margin: 0;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+        }
+        .dashboard-title span {
+            font-weight: 300;
+            color: var(--text-muted);
+        }
+        .dashboard-subtitle {
+            margin: 0;
+            font-size: 13px;
+            color: #3b82f6;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-weight: 700;
+        }
+
+        /* Top KPI Stat Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto 20px auto;
+        }
+        .kpi-card {
+            background-color: var(--bg-card);
+            padding: 15px 20px 20px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            border-top: 4px solid #3b82f6;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: background-color 0.3s;
+        }
+        .kpi-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        .kpi-card p {
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--text-main);
+        }
+
+        /* Active Filter Ribbon */
+        .active-filter-ribbon {
+            background: var(--ribbon-bg);
+            color: var(--ribbon-text);
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 15px;
+            margin: 0 auto 20px auto;
+            max-width: 1200px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid var(--ribbon-border);
+            transition: all 0.3s;
+        }
+
+        /* Filter Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            background-color: var(--bg-card);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            max-width: 1200px;
+            margin: 0 auto 20px auto;
+            transition: background-color 0.3s;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+        select {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            font-size: 16px;
+            min-width: 130px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .clear-btn {
+            padding: 9px 15px;
+            border-radius: 5px;
+            border: none;
+            background-color: #4b5563;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .clear-btn:hover { background-color: #374151; }
+
+        /* Emergency Callouts */
+        .emergency-card {
+            background-color: var(--bg-card);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            max-width: 1200px;
+            margin: 0 auto 20px auto;
+            border-left: 5px solid #ef4444;
+            transition: background-color 0.3s;
+        }
+        .emergency-card h2 {
+            font-size: 18px;
+            margin-top: 0;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            color: #ef4444;
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .emergency-toggle {
+            margin-left: auto;
+            font-size: 14px;
+            color: #3b82f6;
+            cursor: pointer;
+            font-weight: bold;
+            user-select: none;
+            transition: color 0.3s;
+        }
+        .emergency-toggle:hover {
+            text-decoration: underline;
+        }
+        .emergency-list {
+            margin: 0;
+            padding-left: 20px;
+            line-height: 1.6;
+            color: var(--text-main);
+            font-size: 15px;
+        }
+        .emergency-list li { margin-bottom: 8px; }
+        
+        /* Interactive Callout Links */
+        .callout-link {
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .callout-link:hover {
+            text-decoration: underline;
+            opacity: 0.7;
+        }
+        .callout-market {
+            color: #8b5cf6; /* The requested Purple */
+            font-weight: bold;
+        }
+        .callout-entity {
+            color: var(--text-main);
+            font-weight: bold;
+        }
+
+        /* Map Container */
+        .map-card {
+            background-color: var(--bg-card);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            max-width: 1200px;
+            margin: 0 auto 20px auto;
+            position: relative;
+            transition: background-color 0.3s;
+        }
+        .map-card h2 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+        .executive-summary {
+            font-style: italic;
+            color: var(--text-muted);
+            font-size: 15px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+        
+        div.google-visualization-tooltip {
+            border: 1px solid var(--border-color) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2) !important;
+            background-color: var(--tooltip-bg) !important;
+            z-index: 1000;
+        }
+
+        /* Main Content Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 3fr 1fr; 
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            grid-column: 1 / -1;
+        }
+        
+        .card {
+            background-color: var(--bg-card);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: background-color 0.3s;
+        }
+        .card h2 {
+            font-size: 18px;
+            margin-top: 0;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 8px;
+            color: var(--text-main);
+        }
+        
+        .chart-filter-text {
+            font-size: 50%;
+            font-style: italic;
+            color: #8b5cf6; 
+            font-weight: normal;
+            opacity: 0.9;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 200px;
+            width: 100%;
+        }
+        
+        /* Interactive Leaderboard Header */
+        .leaderboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            margin-bottom: 5px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .title-select {
+            border: none;
+            border-bottom: 2px dashed #3b82f6;
+            font-size: 16px;
+            font-weight: bold;
+            background: transparent;
+            cursor: pointer;
+            color: var(--text-main);
+            padding: 0 0 2px 0;
+            outline: none;
+            appearance: none; 
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            transition: color 0.3s;
+        }
+        .title-select:hover { color: #3b82f6; }
+        
+        .leaderboard-header select:not(.title-select) {
+            padding: 5px;
+            font-size: 14px;
+            min-width: 100px;
+        }
+        
+        .leaderboard-list { list-style: none; padding: 0; margin: 0; }
+        .leaderboard-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 15px;
+            color: var(--text-main);
+        }
+        .leaderboard-list li:last-child { border-bottom: none; }
+        .rank-number { font-weight: bold; color: #3b82f6; margin-right: 10px; }
+        
+        .scrollable-list {
+            max-height: 235px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        .scrollable-list::-webkit-scrollbar { width: 6px; }
+        .scrollable-list::-webkit-scrollbar-track { background: var(--bg-body); border-radius: 4px; }
+        .scrollable-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        @media (max-width: 900px) {
+            .main-grid, .bottom-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()">🌙 Dark Mode</button>
+
+    <div class="header-container">
+        <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="url(#blue-green-gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <defs>
+                <linearGradient id="blue-green-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#3b82f6" />
+                    <stop offset="100%" stop-color="#10b981" />
+                </linearGradient>
+            </defs>
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
+        <div>
+            <h1 class="dashboard-title">Sales <span>Global Performance</span></h1>
+            <p class="dashboard-subtitle">Executive Sales Intelligence</p>
+        </div>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card" style="border-color: #3b82f6;">
+            <h3>Total Revenue</h3><p id="kpi-revenue">$0</p>
+        </div>
+        <div class="kpi-card" style="border-color: #10b981;">
+            <h3>Total Profit</h3><p id="kpi-profit">$0</p>
+        </div>
+        <div class="kpi-card" style="border-color: #8b5cf6;">
+            <h3>Profit Margin</h3><p id="kpi-margin">0%</p>
+        </div>
+        <div class="kpi-card" style="border-color: #f59e0b;">
+            <h3>Avg Discount</h3><p id="kpi-discount">0%</p>
+        </div>
+        <div class="kpi-card" style="border-color: #ef4444;">
+            <h3>Total Returns</h3><p id="kpi-returns">0</p>
+        </div>
+    </div>
+
+    <div class="active-filter-ribbon" id="activeFilterRibbon">
+        <strong>Active Filters:</strong> Global View
+    </div>
+
+    <div class="controls">
+        <div class="filter-group">
+            <label for="compareByFilter" style="color: #3b82f6;"><strong>Chart View Level</strong></label>
+            <select id="compareByFilter" onchange="updateDashboard()">
+                <option value="region" selected>Regions</option>
+                <option value="rep">Salespeople</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="yearFilter"><strong>Year</strong></label>
+            <select id="yearFilter" onchange="updateDashboard()">
+                <option value="All">All Years</option>
+                <option value="2022">2022</option>
+                <option value="2023">2023</option>
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="marketFilter"><strong>Market</strong></label>
+            <select id="marketFilter" onchange="updateDashboard()">
+                <option value="All">All Markets</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="regionFilter"><strong>Region</strong></label>
+            <select id="regionFilter" onchange="updateDashboard()">
+                <option value="All">All Regions</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="repFilter"><strong>Salesperson</strong></label>
+            <select id="repFilter" onchange="updateDashboard()">
+                <option value="All">All Salespeople</option>
+            </select>
+        </div>
+        <button class="clear-btn" onclick="clearFilters()">⟳ Clear Filters</button>
+    </div>
+    
+    <div class="emergency-card" id="emergencyCard">
+        <h2>
+            ⚠️ Emergency Callouts <span class="chart-filter-text">Global View</span>
+            <span id="emergencyToggle" class="emergency-toggle" onclick="toggleEmergencies()">See All (0)</span>
+        </h2>
+        <ul id="emergencyList" class="emergency-list" style="display: none;">
+            </ul>
+    </div>
+
+    <div class="map-card">
+        <h2>🌍 Global Market Performance</h2>
+        <p class="executive-summary">
+            This executive dashboard provides a comprehensive overview of global sales performance. The Emergency Callouts section automatically flags unprofitable segments across the entire active dataset. You can click directly on any purple market tag, region name, or salesperson within these callouts to instantly apply a filter and drill down into the root cause. Alternatively, click on any country to seamlessly isolate its interconnected Market, allowing the map to automatically zoom and highlight regional performance. Utilize the Sales Leaderboard and Product Drill-Downs to rank structural performance by profit, margin, average discounts, and revenue.
+        </p>
+        <div id="regions_div" style="width: 100%; height: 450px;"></div>
+    </div>
+
+    <div class="main-grid">
+        <div class="left-column">
+            <div class="chart-grid">
+                <div class="card">
+                    <h2>Revenue vs Average <span class="chart-filter-text">Global View</span></h2>
+                    <div class="chart-container"><canvas id="revenueChart"></canvas></div>
+                </div>
+                <div class="card">
+                    <h2>Profit vs Average <span class="chart-filter-text">Global View</span></h2>
+                    <div class="chart-container"><canvas id="profitChart"></canvas></div>
+                </div>
+                <div class="card">
+                    <h2>Discount Given vs Average (%) <span class="chart-filter-text">Global View</span></h2>
+                    <div class="chart-container"><canvas id="discountChart"></canvas></div>
+                </div>
+                <div class="card">
+                    <h2>Returns vs Average <span class="chart-filter-text">Global View</span></h2>
+                    <div class="chart-container"><canvas id="returnsChart"></canvas></div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>📈 Year-over-Year Trend & Predictive Forecast <span class="chart-filter-text">Global View</span></h2>
+                <div style="position: relative; height: 250px; width: 100%;">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Sales Leaderboard</h2>
+            <div class="leaderboard-header">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 5px;">
+                    🏆 
+                    <select id="leaderboardGroupFilter" class="title-select" onchange="updateDashboard()">
+                        <option value="rep" selected>Salespeople</option>
+                        <option value="market">Markets</option>
+                        <option value="region">Regions</option>
+                    </select>
+                    <span style="font-size: 16px; color: #3b82f6; cursor: pointer; pointer-events: none;">⬍</span>
+                </h3>
+                <select id="metricFilter" onchange="updateDashboard()">
+                    <option value="profit" selected>Profit $</option>
+                    <option value="margin">Profit Margin %</option>
+                    <option value="revenue">Revenue</option>
+                    <option value="discount">Avg Discounts</option>
+                    <option value="returns">Returns</option>
+                </select>
+            </div>
+            <ul id="leaderboard" class="leaderboard-list"></ul>
+        </div>
+        
+        <div class="bottom-grid">
+            <div class="card">
+                <h2>📦 Product Category Drill-Down <span class="chart-filter-text">Global View</span></h2>
+                <div style="position: relative; height: 250px; width: 100%;">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>🏷️ Subcategories Drill-Down <span class="chart-filter-text">Global View</span></h2>
+                <div class="leaderboard-header">
+                    <h3 style="margin: 0; font-size: 16px; color: var(--text-muted);">Top Subcategories</h3>
+                    <select id="subcatMetricFilter" onchange="updateDashboard()">
+                        <option value="profit" selected>Profit $</option>
+                        <option value="margin">Profit Margin %</option>
+                        <option value="revenue">Revenue</option>
+                        <option value="discount">Avg Discounts</option>
+                        <option value="returns">Returns</option>
+                    </select>
+                </div>
+                <ul id="subcatLeaderboard" class="leaderboard-list scrollable-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- REAL DATA ---
+        const rawData = [
+            {"rep": "Adamma Kalu", "region": "Africa", "market": "EMEA", "year": "2022", "revenue": 127187.27, "profit": 10944.11, "discount": 20.56, "returns": 0}, {"rep": "Adamma Kalu", "region": "Africa", "market": "EMEA", "year": "2023", "revenue": 144480.71, "profit": 11908.94, "discount": 17.28, "returns": 0}, {"rep": "Adamma Kalu", "region": "Africa", "market": "EMEA", "year": "2024", "revenue": 229068.79, "profit": 26687.11, "discount": 13.7, "returns": 0}, {"rep": "Adamma Kalu", "region": "Africa", "market": "EMEA", "year": "2025", "revenue": 283036.44, "profit": 39331.47, "discount": 14.0, "returns": 0}, 
+            {"rep": "Ana Contreras", "region": "Caribbean", "market": "LATAM", "year": "2022", "revenue": 57043.43, "profit": 4358.91, "discount": 14.33, "returns": 15}, {"rep": "Ana Contreras", "region": "Caribbean", "market": "LATAM", "year": "2023", "revenue": 64147.58, "profit": 8706.26, "discount": 13.14, "returns": 18}, {"rep": "Ana Contreras", "region": "Caribbean", "market": "LATAM", "year": "2024", "revenue": 97598.3, "profit": 8973.54, "discount": 13.72, "returns": 18}, {"rep": "Ana Contreras", "region": "Caribbean", "market": "LATAM", "year": "2025", "revenue": 105491.56, "profit": 12532.62, "discount": 13.32, "returns": 11}, 
+            {"rep": "Anna Andreadi", "region": "South", "market": "EMEA", "year": "2022", "revenue": 86397.55, "profit": 6938.56, "discount": 11.85, "returns": 26}, {"rep": "Anna Andreadi", "region": "South", "market": "EMEA", "year": "2023", "revenue": 118451.07, "profit": 11121.75, "discount": 9.17, "returns": 19}, {"rep": "Anna Andreadi", "region": "South", "market": "EMEA", "year": "2024", "revenue": 176492.13, "profit": 17290.59, "discount": 10.17, "returns": 29}, {"rep": "Anna Andreadi", "region": "South", "market": "EMEA", "year": "2025", "revenue": 210620.71, "profit": 30164.92, "discount": 9.32, "returns": 49}, 
+            {"rep": "Charlotte Wilson", "region": "Oceania", "market": "APAC", "year": "2022", "revenue": 171418.56, "profit": 21428.76, "discount": 14.26, "returns": 40}, {"rep": "Charlotte Wilson", "region": "Oceania", "market": "APAC", "year": "2023", "revenue": 250065.67, "profit": 29675.32, "discount": 14.81, "returns": 37}, {"rep": "Charlotte Wilson", "region": "Oceania", "market": "APAC", "year": "2024", "revenue": 316270.49, "profit": 37553.45, "discount": 14.49, "returns": 35}, {"rep": "Charlotte Wilson", "region": "Oceania", "market": "APAC", "year": "2025", "revenue": 362429.89, "profit": 31431.58, "discount": 16.8, "returns": 36}, 
+            {"rep": "Clara Dupont", "region": "Central", "market": "EMEA", "year": "2022", "revenue": 292514.84, "profit": 37757.51, "discount": 9.28, "returns": 48}, {"rep": "Clara Dupont", "region": "Central", "market": "EMEA", "year": "2023", "revenue": 397175.41, "profit": 47683.31, "discount": 8.81, "returns": 90}, {"rep": "Clara Dupont", "region": "Central", "market": "EMEA", "year": "2024", "revenue": 439378.47, "profit": 58217.22, "discount": 8.77, "returns": 119}, {"rep": "Clara Dupont", "region": "Central", "market": "EMEA", "year": "2025", "revenue": 602860.95, "profit": 74775.48, "discount": 9.28, "returns": 125}, 
+            {"rep": "Deborah Brumfield", "region": "US-Midwest", "market": "NA", "year": "2022", "revenue": 64708.49, "profit": 6781.43, "discount": 22.58, "returns": 24}, {"rep": "Deborah Brumfield", "region": "US-Midwest", "market": "NA", "year": "2023", "revenue": 81721.35, "profit": 8072.05, "discount": 18.26, "returns": 20}, {"rep": "Deborah Brumfield", "region": "US-Midwest", "market": "NA", "year": "2024", "revenue": 122324.93, "profit": 15894.04, "discount": 19.76, "returns": 8}, {"rep": "Deborah Brumfield", "region": "US-Midwest", "market": "NA", "year": "2025", "revenue": 120871.82, "profit": 12862.86, "discount": 19.44, "returns": 23}, 
+            {"rep": "Diego Vargas", "region": "Central", "market": "LATAM", "year": "2022", "revenue": 122894.88, "profit": 14796.34, "discount": 12.88, "returns": 26}, {"rep": "Diego Vargas", "region": "Central", "market": "LATAM", "year": "2023", "revenue": 105426.29, "profit": 4988.35, "discount": 16.17, "returns": 30}, {"rep": "Diego Vargas", "region": "Central", "market": "LATAM", "year": "2024", "revenue": 178145.6, "profit": 19658.04, "discount": 15.19, "returns": 35}, {"rep": "Diego Vargas", "region": "Central", "market": "LATAM", "year": "2025", "revenue": 194043.24, "profit": 16720.82, "discount": 16.10, "returns": 43}, 
+            {"rep": "Gabriela Delgado", "region": "North", "market": "LATAM", "year": "2022", "revenue": 111361.05, "profit": 18521.75, "discount": 5.22, "returns": 75}, {"rep": "Gabriela Delgado", "region": "North", "market": "LATAM", "year": "2023", "revenue": 156964.97, "profit": 24955.27, "discount": 6.65, "returns": 124}, {"rep": "Gabriela Delgado", "region": "North", "market": "LATAM", "year": "2024", "revenue": 158784.9, "profit": 28010.26, "discount": 5.71, "returns": 138}, {"rep": "Gabriela Delgado", "region": "North", "market": "LATAM", "year": "2025", "revenue": 195479.7, "profit": 31330.82, "discount": 6.74, "returns": 131}, 
+            {"rep": "Jack Lebron", "region": "US-Southwest", "market": "NA", "year": "2022", "revenue": 62267.77, "profit": -9120.09, "discount": 33.5, "returns": 14}, {"rep": "Jack Lebron", "region": "US-Southwest", "market": "NA", "year": "2023", "revenue": 48067.38, "profit": -1471.04, "discount": 34.74, "returns": 18}, {"rep": "Jack Lebron", "region": "US-Southwest", "market": "NA", "year": "2024", "revenue": 56002.04, "profit": -5022.72, "discount": 30.62, "returns": 18}, {"rep": "Jack Lebron", "region": "US-Southwest", "market": "NA", "year": "2025", "revenue": 63599.76, "profit": -7532.37, "discount": 33.81, "returns": 23}, 
+            {"rep": "Kelly Williams", "region": "US-Northeast", "market": "NA", "year": "2022", "revenue": 114545.61, "profit": 19190.67, "discount": 11.91, "returns": 19}, {"rep": "Kelly Williams", "region": "US-Northeast", "market": "NA", "year": "2023", "revenue": 140221.63, "profit": 26591.9, "discount": 10.48, "returns": 26}, {"rep": "Kelly Williams", "region": "US-Northeast", "market": "NA", "year": "2024", "revenue": 155937.81, "profit": 27744.49, "discount": 10.76, "returns": 32}, {"rep": "Kelly Williams", "region": "US-Northeast", "market": "NA", "year": "2025", "revenue": 188608.23, "profit": 34781.17, "discount": 11.08, "returns": 43}, 
+            {"rep": "Lawana Nguyen", "region": "Southeast", "market": "APAC", "year": "2022", "revenue": 150062.01, "profit": 3243.0, "discount": 27.55, "returns": 29}, {"rep": "Lawana Nguyen", "region": "Southeast", "market": "APAC", "year": "2023", "revenue": 186162.93, "profit": 2738.13, "discount": 26.34, "returns": 47}, {"rep": "Lawana Nguyen", "region": "Southeast", "market": "APAC", "year": "2024", "revenue": 225130.02, "profit": 3166.2, "discount": 27.38, "returns": 36}, {"rep": "Lawana Nguyen", "region": "Southeast", "market": "APAC", "year": "2025", "revenue": 323068.21, "profit": 8705.0, "discount": 27.42, "returns": 41}, 
+            {"rep": "Letícia Silva", "region": "South", "market": "LATAM", "year": "2022", "revenue": 93798.8, "profit": -968.58, "discount": 19.59, "returns": 17}, {"rep": "Letícia Silva", "region": "South", "market": "LATAM", "year": "2023", "revenue": 138194.46, "profit": 11535.02, "discount": 17.18, "returns": 33}, {"rep": "Letícia Silva", "region": "South", "market": "LATAM", "year": "2024", "revenue": 173611.97, "profit": 4773.53, "discount": 19.81, "returns": 59}, {"rep": "Letícia Silva", "region": "South", "market": "LATAM", "year": "2025", "revenue": 211618.45, "profit": 12750.55, "discount": 17.4, "returns": 52}, 
+            {"rep": "Li Chen", "region": "North", "market": "APAC", "year": "2022", "revenue": 196936.44, "profit": 35951.13, "discount": 6.43, "returns": 91}, {"rep": "Li Chen", "region": "North", "market": "APAC", "year": "2023", "revenue": 154352.24, "profit": 28588.01, "discount": 4.34, "returns": 85}, {"rep": "Li Chen", "region": "North", "market": "APAC", "year": "2024", "revenue": 237622.54, "profit": 49523.53, "discount": 3.4, "returns": 98}, {"rep": "Li Chen", "region": "North", "market": "APAC", "year": "2025", "revenue": 266148.17, "profit": 53039.18, "discount": 5.26, "returns": 136}, 
+            {"rep": "Marcelle Williams", "region": "US-Southeast", "market": "NA", "year": "2022", "revenue": 103845.84, "profit": 11879.12, "discount": 12.05, "returns": 14}, {"rep": "Marcelle Williams", "region": "US-Southeast", "market": "NA", "year": "2023", "revenue": 71359.98, "profit": 8318.59, "discount": 15.69, "returns": 16}, {"rep": "Marcelle Williams", "region": "US-Southeast", "market": "NA", "year": "2024", "revenue": 93539.13, "profit": 17691.02, "discount": 15.15, "returns": 19}, {"rep": "Marcelle Williams", "region": "US-Southeast", "market": "NA", "year": "2025", "revenue": 124186.78, "profit": 9046.62, "discount": 15.5, "returns": 20}, 
+            {"rep": "Matt Collister", "region": "US-West", "market": "NA", "year": "2022", "revenue": 138879.79, "profit": 20812.84, "discount": 8.87, "returns": 80}, {"rep": "Matt Collister", "region": "US-West", "market": "NA", "year": "2023", "revenue": 129162.17, "profit": 20107.09, "discount": 9.53, "returns": 83}, {"rep": "Matt Collister", "region": "US-West", "market": "NA", "year": "2024", "revenue": 180669.92, "profit": 25420.09, "discount": 10.46, "returns": 120}, {"rep": "Matt Collister", "region": "US-West", "market": "NA", "year": "2025", "revenue": 236680.43, "profit": 44349.24, "discount": 9.2, "returns": 182}, 
+            {"rep": "Nicole Hughes", "region": "Canada", "market": "NA", "year": "2022", "revenue": 8509.11, "profit": 1807.08, "discount": 0.0, "returns": 0}, {"rep": "Nicole Hughes", "region": "Canada", "market": "NA", "year": "2023", "revenue": 16096.8, "profit": 4887.84, "discount": 0.0, "returns": 0}, {"rep": "Nicole Hughes", "region": "Canada", "market": "NA", "year": "2024", "revenue": 19161.15, "profit": 5129.46, "discount": 0.0, "returns": 0}, {"rep": "Nicole Hughes", "region": "Canada", "market": "NA", "year": "2025", "revenue": 23161.11, "profit": 5993.01, "discount": 0.0, "returns": 0}, 
+            {"rep": "Ola Hansen", "region": "North", "market": "EMEA", "year": "2022", "revenue": 101576.83, "profit": 17344.48, "discount": 14.46, "returns": 15}, {"rep": "Ola Hansen", "region": "North", "market": "EMEA", "year": "2023", "revenue": 143266.0, "profit": 25950.67, "discount": 11.15, "returns": 37}, {"rep": "Ola Hansen", "region": "North", "market": "EMEA", "year": "2024", "revenue": 147048.08, "profit": 23157.17, "discount": 15.47, "returns": 29}, {"rep": "Ola Hansen", "region": "North", "market": "EMEA", "year": "2025", "revenue": 233684.07, "profit": 25327.53, "discount": 14.21, "returns": 51}, 
+            {"rep": "Sudha Patel", "region": "Central", "market": "APAC", "year": "2022", "revenue": 125506.63, "profit": 19814.26, "discount": 12.34, "returns": 16}, {"rep": "Sudha Patel", "region": "Central", "market": "APAC", "year": "2023", "revenue": 178087.72, "profit": 28090.69, "discount": 9.22, "returns": 12}, {"rep": "Sudha Patel", "region": "Central", "market": "APAC", "year": "2024", "revenue": 201530.86, "profit": 31778.65, "discount": 9.41, "returns": 10}, {"rep": "Sudha Patel", "region": "Central", "market": "APAC", "year": "2025", "revenue": 267012.82, "profit": 45514.58, "discount": 9.96, "returns": 37}, 
+            {"rep": "Svitlana Kovalenko", "region": "East", "market": "EMEA", "year": "2022", "revenue": 61532.09, "profit": 14944.76, "discount": 2.12, "returns": 0}, {"rep": "Svitlana Kovalenko", "region": "East", "market": "EMEA", "year": "2023", "revenue": 62469.46, "profit": 12710.38, "discount": 2.74, "returns": 0}, {"rep": "Svitlana Kovalenko", "region": "East", "market": "EMEA", "year": "2024", "revenue": 88818.14, "profit": 21664.04, "discount": 1.4, "returns": 0}, {"rep": "Svitlana Kovalenko", "region": "East", "market": "EMEA", "year": "2025", "revenue": 136266.11, "profit": 27689.18, "discount": 2.03, "returns": 0}, 
+            {"rep": "Yusuf Pasha", "region": "MiddleEast", "market": "EMEA", "year": "2022", "revenue": 68463.9, "profit": -7485.24, "discount": 27.36, "returns": 0}, {"rep": "Yusuf Pasha", "region": "MiddleEast", "market": "EMEA", "year": "2023", "revenue": 91564.88, "profit": -7743.25, "discount": 30.08, "returns": 0}, {"rep": "Yusuf Pasha", "region": "MiddleEast", "market": "EMEA", "year": "2024", "revenue": 108611.18, "profit": -10374.49, "discount": 28.93, "returns": 0}, {"rep": "Yusuf Pasha", "region": "MiddleEast", "market": "EMEA", "year": "2025", "revenue": 150997.43, "profit": -4648.27, "discount": 28.75, "returns": 0}
+        ];
+
+        // Deep Geographic mapping data
+        const countryToMapData = {
+            "Algeria": {"region": "Africa", "market": "EMEA"}, "Australia": {"region": "Oceania", "market": "APAC"}, 
+            "Hungary": {"region": "East", "market": "EMEA"}, "Sweden": {"region": "North", "market": "EMEA"}, 
+            "New Zealand": {"region": "Oceania", "market": "APAC"}, "Iraq": {"region": "MiddleEast", "market": "EMEA"}, 
+            "Philippines": {"region": "Southeast", "market": "APAC"}, "United Kingdom": {"region": "North", "market": "EMEA"}, 
+            "Malaysia": {"region": "Southeast", "market": "APAC"}, "Guatemala": {"region": "Central", "market": "LATAM"}, 
+            "Iran": {"region": "MiddleEast", "market": "EMEA"}, "Thailand": {"region": "Southeast", "market": "APAC"}, 
+            "Tanzania": {"region": "Africa", "market": "EMEA"}, "Brazil": {"region": "South", "market": "LATAM"}, 
+            "Mexico": {"region": "North", "market": "LATAM"}, "Cuba": {"region": "Caribbean", "market": "LATAM"}, 
+            "France": {"region": "Central", "market": "EMEA"}, "Japan": {"region": "North", "market": "APAC"}, 
+            "Sudan": {"region": "Africa", "market": "EMEA"}, "Taiwan": {"region": "North", "market": "APAC"}, 
+            "Indonesia": {"region": "Southeast", "market": "APAC"}, "Vietnam": {"region": "Southeast", "market": "APAC"}, 
+            "Angola": {"region": "Africa", "market": "EMEA"}, "China": {"region": "North", "market": "APAC"}, 
+            "Mozambique": {"region": "Africa", "market": "EMEA"}, "Lebanon": {"region": "MiddleEast", "market": "EMEA"}, 
+            "Singapore": {"region": "Southeast", "market": "APAC"}, "Netherlands": {"region": "Central", "market": "EMEA"}, 
+            "Nigeria": {"region": "Africa", "market": "EMEA"}, "Egypt": {"region": "Africa", "market": "EMEA"}, 
+            "Venezuela": {"region": "South", "market": "LATAM"}, "South Africa": {"region": "Africa", "market": "EMEA"}, 
+            "Spain": {"region": "South", "market": "EMEA"}, "India": {"region": "Central", "market": "APAC"}, 
+            "Turkey": {"region": "MiddleEast", "market": "EMEA"}, "Austria": {"region": "Central", "market": "EMEA"}, 
+            "Italy": {"region": "South", "market": "EMEA"}, "Germany": {"region": "Central", "market": "EMEA"}, 
+            "Nicaragua": {"region": "Central", "market": "LATAM"}, "Dominican Republic": {"region": "Caribbean", "market": "LATAM"}, 
+            "El Salvador": {"region": "Central", "market": "LATAM"}, "Denmark": {"region": "North", "market": "EMEA"}, 
+            "Saudi Arabia": {"region": "MiddleEast", "market": "EMEA"}, "Zambia": {"region": "Africa", "market": "EMEA"}, 
+            "Myanmar (Burma)": {"region": "Southeast", "market": "APAC"}, "Russia": {"region": "East", "market": "EMEA"}, 
+            "Mongolia": {"region": "North", "market": "APAC"}, "Belgium": {"region": "Central", "market": "EMEA"}, 
+            "Kenya": {"region": "Africa", "market": "EMEA"}, "Colombia": {"region": "South", "market": "LATAM"}, 
+            "Estonia": {"region": "East", "market": "EMEA"}, "Madagascar": {"region": "Africa", "market": "EMEA"}, 
+            "Portugal": {"region": "South", "market": "EMEA"}, "Morocco": {"region": "Africa", "market": "EMEA"}, 
+            "Sierra Leone": {"region": "Africa", "market": "EMEA"}, "Norway": {"region": "North", "market": "EMEA"}, 
+            "Central African Republic": {"region": "Africa", "market": "EMEA"}, "Czech Republic": {"region": "East", "market": "EMEA"}, 
+            "Benin": {"region": "Africa", "market": "EMEA"}, "Bangladesh": {"region": "Central", "market": "APAC"}, 
+            "Panama": {"region": "Central", "market": "LATAM"}, "Chile": {"region": "South", "market": "LATAM"}, 
+            "South Korea": {"region": "North", "market": "APAC"}, "Switzerland": {"region": "Central", "market": "EMEA"}, 
+            "Moldova": {"region": "East", "market": "EMEA"}, "Uganda": {"region": "Africa", "market": "EMEA"}, 
+            "Zimbabwe": {"region": "Africa", "market": "EMEA"}, "Niger": {"region": "Africa", "market": "EMEA"}, 
+            "Senegal": {"region": "Africa", "market": "EMEA"}, "Hong Kong": {"region": "North", "market": "APAC"}, 
+            "Democratic Republic of the Congo": {"region": "Africa", "market": "EMEA"}, "Poland": {"region": "East", "market": "EMEA"}, 
+            "Ireland": {"region": "North", "market": "EMEA"}, "Pakistan": {"region": "Central", "market": "APAC"}, 
+            "Azerbaijan": {"region": "East", "market": "EMEA"}, "Ukraine": {"region": "East", "market": "EMEA"}, 
+            "Albania": {"region": "East", "market": "EMEA"}, "Romania": {"region": "East", "market": "EMEA"}, 
+            "Honduras": {"region": "Central", "market": "LATAM"}, "Israel": {"region": "MiddleEast", "market": "EMEA"}, 
+            "Cameroon": {"region": "Africa", "market": "EMEA"}, "Cambodia": {"region": "Southeast", "market": "APAC"}, 
+            "Georgia": {"region": "East", "market": "EMEA"}, "Argentina": {"region": "South", "market": "LATAM"}, 
+            "Finland": {"region": "North", "market": "EMEA"}, "Lithuania": {"region": "East", "market": "EMEA"}, 
+            "Peru": {"region": "South", "market": "LATAM"}, "Somalia": {"region": "Africa", "market": "EMEA"}, 
+            "Haiti": {"region": "Caribbean", "market": "LATAM"}, "Cote d'Ivoire": {"region": "Africa", "market": "EMEA"}, 
+            "Afghanistan": {"region": "Central", "market": "APAC"}, "Guinea": {"region": "Africa", "market": "EMEA"}, 
+            "Liberia": {"region": "Africa", "market": "EMEA"}, "South Sudan": {"region": "Africa", "market": "EMEA"}, 
+            "Turkmenistan": {"region": "Central", "market": "APAC"}, "Kazakhstan": {"region": "Central", "market": "APAC"}, 
+            "Lesotho": {"region": "Africa", "market": "EMEA"}, "Burundi": {"region": "Africa", "market": "EMEA"}, 
+            "Qatar": {"region": "MiddleEast", "market": "EMEA"}, "Bulgaria": {"region": "East", "market": "EMEA"}, 
+            "Martinique": {"region": "Caribbean", "market": "LATAM"}, "Croatia": {"region": "East", "market": "EMEA"}, 
+            "Ghana": {"region": "Africa", "market": "EMEA"}, "Rwanda": {"region": "Africa", "market": "EMEA"}, 
+            "Ecuador": {"region": "South", "market": "LATAM"}, "Paraguay": {"region": "South", "market": "LATAM"}, 
+            "Ethiopia": {"region": "Africa", "market": "EMEA"}, "Syria": {"region": "MiddleEast", "market": "EMEA"}, 
+            "Tajikistan": {"region": "Central", "market": "APAC"}, "Slovakia": {"region": "East", "market": "EMEA"}, 
+            "Belarus": {"region": "East", "market": "EMEA"}, "Papua New Guinea": {"region": "Oceania", "market": "APAC"}, 
+            "Togo": {"region": "Africa", "market": "EMEA"}, "Libya": {"region": "Africa", "market": "EMEA"}, 
+            "Djibouti": {"region": "Africa", "market": "EMEA"}, "Yemen": {"region": "MiddleEast", "market": "EMEA"}, 
+            "United Arab Emirates": {"region": "MiddleEast", "market": "EMEA"}, "Barbados": {"region": "Caribbean", "market": "LATAM"}, 
+            "Uzbekistan": {"region": "Central", "market": "APAC"}, "Jamaica": {"region": "Caribbean", "market": "LATAM"}, 
+            "Bolivia": {"region": "South", "market": "LATAM"}, "Uruguay": {"region": "South", "market": "LATAM"}, 
+            "Republic of the Congo": {"region": "Africa", "market": "EMEA"}, "Swaziland": {"region": "Africa", "market": "EMEA"}, 
+            "Kyrgyzstan": {"region": "Central", "market": "APAC"}, "Guinea-Bissau": {"region": "Africa", "market": "EMEA"}, 
+            "Bosnia and Herzegovina": {"region": "East", "market": "EMEA"}, "Tunisia": {"region": "Africa", "market": "EMEA"}, 
+            "Armenia": {"region": "East", "market": "EMEA"}, "Mali": {"region": "Africa", "market": "EMEA"}, 
+            "Jordan": {"region": "MiddleEast", "market": "EMEA"}, "Trinidad and Tobago": {"region": "Caribbean", "market": "LATAM"}, 
+            "Namibia": {"region": "Africa", "market": "EMEA"}, "Gabon": {"region": "Africa", "market": "EMEA"}, 
+            "Macedonia": {"region": "East", "market": "EMEA"}, "Nepal": {"region": "Central", "market": "APAC"}, 
+            "Mauritania": {"region": "Africa", "market": "EMEA"}, "Guadeloupe": {"region": "Caribbean", "market": "LATAM"}, 
+            "Sri Lanka": {"region": "Central", "market": "APAC"}, "Chad": {"region": "Africa", "market": "EMEA"}, 
+            "Eritrea": {"region": "Africa", "market": "EMEA"}, "Bahrain": {"region": "MiddleEast", "market": "EMEA"}, 
+            "Equatorial Guinea": {"region": "Africa", "market": "EMEA"}, "Slovenia": {"region": "East", "market": "EMEA"}, 
+            "Montenegro": {"region": "East", "market": "EMEA"},
+            "United States": {"region": "US-Multiple", "market": "NA"}, "Canada": {"region": "Canada", "market": "NA"}
+        };
+
+        const subcats = ['Phones', 'Copiers', 'Accessories', 'Machines', 'Chairs', 'Tables', 'Bookcases', 'Furnishings', 'Storage', 'Art', 'Binders', 'Appliances', 'Paper', 'Envelopes', 'Fasteners', 'Labels'];
+
+        const moneyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+        const percentFormatter = new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 1 });
+
+        const marketFilter = document.getElementById('marketFilter');
+        [...new Set(rawData.map(item => item.market))].sort().forEach(market => {
+            let option = document.createElement('option'); option.value = market; option.text = market; marketFilter.appendChild(option);
+        });
+
+        const regionFilter = document.getElementById('regionFilter');
+        [...new Set(rawData.map(item => item.region))].sort().forEach(region => {
+            let option = document.createElement('option'); option.value = region; option.text = region; regionFilter.appendChild(option);
+        });
+
+        const repFilter = document.getElementById('repFilter');
+        [...new Set(rawData.map(item => item.rep))].sort().forEach(rep => {
+            let option = document.createElement('option'); option.value = rep; option.text = rep; repFilter.appendChild(option);
+        });
+
+        let charts = {};
+        let geoChart, geoData;
+        let isChartJsLoaded = false;
+        let isGoogleLoaded = false;
+        let isDarkTheme = false;
+
+        // Interactive Callout Application Logic
+        window.applyCalloutFilter = function(type, val) {
+            if (type === 'market') {
+                document.getElementById('marketFilter').value = val;
+                document.getElementById('regionFilter').value = 'All';
+                document.getElementById('repFilter').value = 'All';
+                document.getElementById('compareByFilter').value = 'region';
+            } else if (type === 'region') {
+                let rData = rawData.find(d => d.region === val);
+                if(rData) document.getElementById('marketFilter').value = rData.market;
+                document.getElementById('regionFilter').value = val;
+                document.getElementById('repFilter').value = 'All';
+                document.getElementById('compareByFilter').value = 'rep';
+            } else if (type === 'rep') {
+                let rData = rawData.find(d => d.rep === val);
+                if(rData) {
+                    document.getElementById('marketFilter').value = rData.market;
+                    document.getElementById('regionFilter').value = rData.region;
+                }
+                document.getElementById('repFilter').value = val;
+                document.getElementById('compareByFilter').value = 'rep';
+            }
+            updateDashboard();
+        }
+
+        // Dark Mode Logic
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.documentElement.setAttribute('data-theme', isDarkTheme ? 'dark' : 'light');
+            document.getElementById('themeToggle').innerText = isDarkTheme ? '☀️ Light Mode' : '🌙 Dark Mode';
+            
+            Chart.defaults.color = isDarkTheme ? '#9ca3af' : '#6b7280';
+            Chart.defaults.borderColor = isDarkTheme ? '#374151' : '#e5e7eb';
+            
+            for (let key in charts) {
+                if (charts[key].options && charts[key].options.scales) {
+                    if (charts[key].options.scales.x) {
+                        charts[key].options.scales.x.ticks.color = isDarkTheme ? '#9ca3af' : '#6b7280';
+                        charts[key].options.scales.x.grid.color = isDarkTheme ? '#374151' : '#e5e7eb';
+                    }
+                    if (charts[key].options.scales.y) {
+                        charts[key].options.scales.y.ticks.color = isDarkTheme ? '#9ca3af' : '#6b7280';
+                        charts[key].options.scales.y.grid.color = isDarkTheme ? '#374151' : '#e5e7eb';
+                    }
+                    if (charts[key].options.scales.y1) {
+                        charts[key].options.scales.y1.ticks.color = isDarkTheme ? '#9ca3af' : '#6b7280';
+                        charts[key].options.scales.y1.grid.color = isDarkTheme ? '#374151' : '#e5e7eb';
+                    }
+                }
+                charts[key].update();
+            }
+            updateDashboard();
+        }
+        
+        // Expand/Collapse Emergency Callouts
+        function toggleEmergencies() {
+            const list = document.getElementById('emergencyList');
+            const toggle = document.getElementById('emergencyToggle');
+            
+            let match = toggle.innerText.match(/\d+/);
+            let count = match ? match[0] : 0;
+
+            if (list.style.display === 'none' || list.style.display === '') {
+                list.style.display = 'block';
+                toggle.innerText = `Hide (${count})`;
+            } else {
+                list.style.display = 'none';
+                toggle.innerText = `See All (${count})`;
+            }
+        }
+
+        function createChartConfig(label, barColor, lineColor) {
+            return {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [
+                        { type: 'line', label: 'Group Average', data: [], borderColor: lineColor, borderWidth: 2, borderDash: [5, 5], fill: false, tension: 0.1, pointRadius: 3 },
+                        { type: 'bar', label: label, data: [], backgroundColor: barColor, borderRadius: 4 }
+                    ]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    layout: { padding: { bottom: 0, top: 10 } },
+                    scales: { y: { beginAtZero: true, ticks: { padding: 0 } }, x: { ticks: { padding: 0 } } }, 
+                    plugins: { legend: { position: 'bottom', labels: { padding: 10, boxWidth: 12 } } } 
+                }
+            };
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            // Main 4 Charts
+            charts.revenue = new Chart(document.getElementById('revenueChart'), createChartConfig('Revenue', 'rgba(59, 130, 246, 0.8)', '#1e3a8a'));
+            charts.profit = new Chart(document.getElementById('profitChart'), createChartConfig('Profit', 'rgba(16, 185, 129, 0.8)', '#064e3b'));
+            charts.discount = new Chart(document.getElementById('discountChart'), createChartConfig('Discount %', 'rgba(245, 158, 11, 0.8)', '#78350f'));
+            charts.returns = new Chart(document.getElementById('returnsChart'), createChartConfig('Returns', 'rgba(239, 68, 68, 0.8)', '#7f1d1d'));
+            
+            // Forecast Trend Chart Setup
+            let trendCtx = document.getElementById('trendChart').getContext('2d');
+            charts.trend = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: ['2022', '2023', '2024', '2025', '2026 (Forecast)'],
+                    datasets: [
+                        { label: 'Revenue ($)', data: [0,0,0,0,0], borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.3, yAxisID: 'y', segment: { borderDash: ctx => ctx.p0DataIndex >= 3 ? [5, 5] : undefined } },
+                        { label: 'Profit ($)', data: [0,0,0,0,0], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3, yAxisID: 'y1', segment: { borderDash: ctx => ctx.p0DataIndex >= 3 ? [5, 5] : undefined } }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        y: { type: 'linear', display: true, position: 'left', ticks: { callback: function(val) { return '$' + (val/1000) + 'k'; } } },
+                        y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } }
+                    },
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+                }
+            });
+            
+            // Category Drill-Down Setup
+            let catCtx = document.getElementById('categoryChart').getContext('2d');
+            charts.category = new Chart(catCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Furniture', 'Office Supplies', 'Technology'],
+                    datasets: [
+                        { label: 'Revenue ($)', data: [0,0,0], backgroundColor: 'rgba(59, 130, 246, 0.8)', borderRadius: 4 },
+                        { label: 'Profit ($)', data: [0,0,0], backgroundColor: 'rgba(16, 185, 129, 0.8)', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            isChartJsLoaded = true;
+            if(isGoogleLoaded) updateDashboard();
+        });
+
+        google.charts.load('current', {'packages':['geochart']});
+        google.charts.setOnLoadCallback(function() {
+            geoChart = new google.visualization.GeoChart(document.getElementById('regions_div'));
+            
+            google.visualization.events.addListener(geoChart, 'select', function() {
+                var selection = geoChart.getSelection();
+                if (selection.length > 0) {
+                    var countryName = geoData.getValue(selection[0].row, 0);
+                    handleMapClick(countryName);
+                }
+            });
+            isGoogleLoaded = true;
+            if(isChartJsLoaded) updateDashboard();
+        });
+
+        // Click Map Logic: Only sets market view without auto clearing
+        function handleMapClick(countryName) {
+            let meta = countryToMapData[countryName];
+            if (meta) {
+                document.getElementById('marketFilter').value = meta.market;
+                document.getElementById('regionFilter').value = 'All'; 
+                document.getElementById('repFilter').value = 'All'; 
+            }
+            document.getElementById('compareByFilter').value = 'region';
+            updateDashboard();
+        }
+
+        function clearFilters() {
+            document.getElementById('yearFilter').value = 'All';
+            document.getElementById('regionFilter').value = 'All';
+            document.getElementById('marketFilter').value = 'All';
+            document.getElementById('repFilter').value = 'All';
+            document.getElementById('compareByFilter').value = 'region';
+            document.getElementById('leaderboardGroupFilter').value = 'rep';
+            document.getElementById('metricFilter').value = 'profit';
+            document.getElementById('subcatMetricFilter').value = 'profit';
+            updateDashboard();
+        }
+
+        function buildTooltipHtml(country, marketName, regionName, reps, rev, prof, disc, ret) {
+            let textColor = isDarkTheme ? '#f3f4f6' : '#1f2937';
+            let borderColor = isDarkTheme ? '#374151' : '#e5e7eb';
+            return `<div style="padding:12px; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; color: ${textColor}; white-space:nowrap;">
+                <strong style="font-size:16px; color:${textColor};">${country}</strong><br/>
+                <hr style="margin:6px 0; border:0; border-top:1px solid ${borderColor};" />
+                <strong style="color: #3b82f6;">Market:</strong> ${marketName}<br/>
+                <strong>Region(s):</strong> <span style="white-space: normal; display: inline-block; max-width: 200px; vertical-align: top;">${regionName}</span><br/>
+                <strong>Salesperson(s):</strong> <span style="white-space: normal; display: inline-block; max-width: 200px; vertical-align: top;">${reps}</span><br/>
+                <hr style="margin:6px 0; border:0; border-top:1px dashed ${borderColor};" />
+                <strong>Revenue:</strong> ${moneyFormatter.format(rev)}<br/>
+                <strong>Profit:</strong> <span style="color:${prof >= 0 ? '#10b981' : '#ef4444'};">${moneyFormatter.format(prof)}</span><br/>
+                <strong>Profit Margin:</strong> ${percentFormatter.format(rev > 0 ? prof/rev : 0)}<br/>
+                <strong>Avg Discount:</strong> ${percentFormatter.format(disc/100)}<br/>
+            </div>`;
+        }
+
+        function getAverage(array) { return array.length === 0 ? 0 : array.reduce((a, b) => a + b, 0) / array.length; }
+        function getSum(array) { return array.reduce((a, b) => a + b, 0); }
+        
+        function hashString(str) {
+            let h = 0;
+            for(let i=0; i<str.length; i++) h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+            return Math.abs(h);
+        }
+        
+        function calculateForecast(dataArray) {
+            if (dataArray.length < 4) return 0;
+            let sumY = dataArray.reduce((a,b) => a+b, 0);
+            let sumXY = 0*dataArray[0] + 1*dataArray[1] + 2*dataArray[2] + 3*dataArray[3];
+            let m = (4 * sumXY - 6 * sumY) / 20; 
+            let b = (sumY - 6 * m) / 4; 
+            let forecast = (m * 4) + b; 
+            return forecast > 0 ? forecast : 0; 
+        }
+
+        function updateDashboard() {
+            if (!isChartJsLoaded || !isGoogleLoaded) return;
+
+            const compareBy = document.getElementById('compareByFilter').value; 
+            const leaderboardGroup = document.getElementById('leaderboardGroupFilter').value; 
+            const selectedYear = document.getElementById('yearFilter').value;
+            const selectedRegion = document.getElementById('regionFilter').value;
+            const selectedMarket = document.getElementById('marketFilter').value;
+            const selectedRep = document.getElementById('repFilter').value;
+
+            // Global Context Ribbon / Title Updaters
+            let activeFilters = [];
+            if (selectedYear !== 'All') activeFilters.push(selectedYear);
+            if (selectedMarket !== 'All') activeFilters.push(`Market: ${selectedMarket}`);
+            if (selectedRegion !== 'All') activeFilters.push(`Region: ${selectedRegion}`);
+            if (selectedRep !== 'All') activeFilters.push(`Rep: ${selectedRep}`);
+            
+            let filterStr = activeFilters.length > 0 ? activeFilters.join(' | ') : 'Global View';
+            
+            document.getElementById('activeFilterRibbon').innerHTML = `<strong>Active Filters:</strong> ${filterStr}`;
+            document.querySelectorAll('.chart-filter-text').forEach(el => el.innerText = filterStr);
+
+            const groupData = rawData.filter(d => {
+                return (selectedYear === 'All' || d.year === selectedYear) &&
+                       (selectedRegion === 'All' || d.region === selectedRegion) &&
+                       (selectedMarket === 'All' || d.market === selectedMarket);
+            });
+
+            updateMap(groupData, selectedMarket, selectedRegion, selectedRep);
+
+            const filteredDataRaw = groupData.filter(d => selectedRep === 'All' || d.rep === selectedRep);
+
+            // Chart Data Aggregation
+            const chartAggregatedData = [];
+            const chartGroups = filteredDataRaw.reduce((acc, curr) => {
+                let key = curr[compareBy];
+                if (!acc[key]) acc[key] = { name: key, revenue: 0, profit: 0, discountSum: 0, returns: 0, count: 0 };
+                acc[key].revenue += curr.revenue;
+                acc[key].profit += curr.profit;
+                acc[key].discountSum += curr.discount;
+                acc[key].returns += curr.returns;
+                acc[key].count += 1;
+                return acc;
+            }, {});
+
+            for (const key in chartGroups) {
+                const r = chartGroups[key];
+                chartAggregatedData.push({ name: r.name, revenue: r.revenue, profit: r.profit, discount: r.discountSum / r.count, returns: r.returns });
+            }
+
+            const aggGroupData = [];
+            const groupRepGroups = groupData.reduce((acc, curr) => {
+                let key = curr[compareBy];
+                if (!acc[key]) acc[key] = { name: key, revenue: 0, profit: 0, discountSum: 0, returns: 0, count: 0 };
+                acc[key].revenue += curr.revenue;
+                acc[key].profit += curr.profit;
+                acc[key].discountSum += curr.discount;
+                acc[key].returns += curr.returns;
+                acc[key].count += 1;
+                return acc;
+            }, {});
+            
+            for (const key in groupRepGroups) {
+                const r = groupRepGroups[key];
+                aggGroupData.push({ revenue: r.revenue, profit: r.profit, discount: r.discountSum / r.count, returns: r.returns });
+            }
+
+            // Exhaustive Emergency Callouts Engine
+            let emergencies = [];
+            const actualCallouts = [{"Year":"2022","Market":"APAC","Region":"Central","Salesperson":"Sudha Patel","Category":"Furniture","Subcategory":"Tables","Profit":-1368.7},{"Year":"2022","Market":"APAC","Region":"North","Salesperson":"Li Chen","Category":"Furniture","Subcategory":"Tables","Profit":-1855.98},{"Year":"2022","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Furniture","Subcategory":"Tables","Profit":-2341.19},{"Year":"2022","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Art","Profit":-190.47},{"Year":"2022","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Envelopes","Profit":-204.41},{"Year":"2022","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Fasteners","Profit":-316.93},{"Year":"2022","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Labels","Profit":-27.69},{"Year":"2022","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Paper","Profit":-378.75},{"Year":"2022","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Supplies","Profit":-861.3},{"Year":"2022","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Technology","Subcategory":"Accessories","Profit":-1407.52},{"Year":"2022","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Technology","Subcategory":"Machines","Profit":-65.12},{"Year":"2022","Market":"EMEA","Region":"Africa","Salesperson":"Adamma Kalu","Category":"Furniture","Subcategory":"Bookcases","Profit":-119.49},{"Year":"2022","Market":"EMEA","Region":"Africa","Salesperson":"Adamma Kalu","Category":"Furniture","Subcategory":"Furnishings","Profit":-369.69},{"Year":"2022","Market":"EMEA","Region":"Africa","Salesperson":"Adamma Kalu","Category":"Office Supplies","Subcategory":"Appliances","Profit":-717.55},{"Year":"2022","Market":"EMEA","Region":"Africa","Salesperson":"Adamma Kalu","Category":"Office Supplies","Subcategory":"Supplies","Profit":-157.36},{"Year":"2022","Market":"EMEA","Region":"Central","Salesperson":"Clara Dupont","Category":"Furniture","Subcategory":"Tables","Profit":-1300.46},{"Year":"2022","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Furniture","Subcategory":"Chairs","Profit":-4110.01},{"Year":"2022","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Furniture","Subcategory":"Tables","Profit":-381.52},{"Year":"2022","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Appliances","Profit":-2704.79},{"Year":"2022","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Labels","Profit":-4.77},{"Year":"2022","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Paper","Profit":-14.7},{"Year":"2022","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Storage","Profit":-1278.64},{"Year":"2022","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Supplies","Profit":-407.51},{"Year":"2022","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Technology","Subcategory":"Accessories","Profit":-285.94},{"Year":"2022","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Technology","Subcategory":"Copiers","Profit":-25.49},{"Year":"2022","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Technology","Subcategory":"Machines","Profit":-814.22},{"Year":"2022","Market":"EMEA","Region":"North","Salesperson":"Ola Hansen","Category":"Furniture","Subcategory":"Furnishings","Profit":-350.58},{"Year":"2022","Market":"EMEA","Region":"North","Salesperson":"Ola Hansen","Category":"Office Supplies","Subcategory":"Fasteners","Profit":-26.57},{"Year":"2022","Market":"EMEA","Region":"North","Salesperson":"Ola Hansen","Category":"Technology","Subcategory":"Accessories","Profit":-248.3},{"Year":"2022","Market":"EMEA","Region":"South","Salesperson":"Anna Andreadi","Category":"Furniture","Subcategory":"Chairs","Profit":-1071.58},{"Year":"2022","Market":"EMEA","Region":"South","Salesperson":"Anna Andreadi","Category":"Furniture","Subcategory":"Tables","Profit":-2496.74},{"Year":"2022","Market":"EMEA","Region":"South","Salesperson":"Anna Andreadi","Category":"Office Supplies","Subcategory":"Storage","Profit":-997.98},{"Year":"2022","Market":"EMEA","Region":"South","Salesperson":"Anna Andreadi","Category":"Technology","Subcategory":"Phones","Profit":-1064.3},{"Year":"2022","Market":"LATAM","Region":"Caribbean","Salesperson":"Ana Contreras","Category":"Furniture","Subcategory":"Furnishings","Profit":-497.06},{"Year":"2022","Market":"LATAM","Region":"Caribbean","Salesperson":"Ana Contreras","Category":"Furniture","Subcategory":"Tables","Profit":-857.37},{"Year":"2022","Market":"LATAM","Region":"Caribbean","Salesperson":"Ana Contreras","Category":"Technology","Subcategory":"Machines","Profit":-804.85},{"Year":"2022","Market":"LATAM","Region":"North","Salesperson":"Gabriela Delgado","Category":"Furniture","Subcategory":"Furnishings","Profit":-281.46},{"Year":"2022","Market":"LATAM","Region":"South","Salesperson":"Letícia Silva","Category":"Furniture","Subcategory":"Tables","Profit":-3529.08},{"Year":"2022","Market":"LATAM","Region":"South","Salesperson":"Letícia Silva","Category":"Office Supplies","Subcategory":"Art","Profit":-108.18},{"Year":"2022","Market":"LATAM","Region":"South","Salesperson":"Letícia Silva","Category":"Office Supplies","Subcategory":"Envelopes","Profit":-223.08},{"Year":"2022","Market":"LATAM","Region":"South","Salesperson":"Letícia Silva","Category":"Office Supplies","Subcategory":"Storage","Profit":-183.62},{"Year":"2022","Market":"LATAM","Region":"South","Salesperson":"Letícia Silva","Category":"Technology","Subcategory":"Machines","Profit":-480.08},{"Year":"2022","Market":"LATAM","Region":"South","Salesperson":"Letícia Silva","Category":"Technology","Subcategory":"Phones","Profit":-1382.6},{"Year":"2022","Market":"NA","Region":"US-Midwest","Salesperson":"Deborah Brumfield","Category":"Furniture","Subcategory":"Bookcases","Profit":-203.16},{"Year":"2022","Market":"NA","Region":"US-Midwest","Salesperson":"Deborah Brumfield","Category":"Furniture","Subcategory":"Furnishings","Profit":-29.81},{"Year":"2022","Market":"NA","Region":"US-Midwest","Salesperson":"Deborah Brumfield","Category":"Furniture","Subcategory":"Tables","Profit":-2138.95},{"Year":"2022","Market":"NA","Region":"US-Midwest","Salesperson":"Deborah Brumfield","Category":"Technology","Subcategory":"Phones","Profit":-166.1},{"Year":"2022","Market":"NA","Region":"US-Northeast","Salesperson":"Kelly Williams","Category":"Furniture","Subcategory":"Bookcases","Profit":-225.97},{"Year":"2022","Market":"NA","Region":"US-Northeast","Salesperson":"Kelly Williams","Category":"Furniture","Subcategory":"Tables","Profit":-2390.18},{"Year":"2022","Market":"NA","Region":"US-Northeast","Salesperson":"Kelly Williams","Category":"Office Supplies","Subcategory":"Supplies","Profit":-24.45},{"Year":"2022","Market":"NA","Region":"US-Southeast","Salesperson":"Marcelle Williams","Category":"Technology","Subcategory":"Machines","Profit":-3254.21},{"Year":"2022","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Furniture","Subcategory":"Bookcases","Profit":-450.7},{"Year":"2022","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Furniture","Subcategory":"Chairs","Profit":-632.62},{"Year":"2022","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Furniture","Subcategory":"Furnishings","Profit":-161.09},{"Year":"2022","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Furniture","Subcategory":"Tables","Profit":-478.86},{"Year":"2022","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Office Supplies","Subcategory":"Appliances","Profit":-941.96},{"Year":"2022","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Office Supplies","Subcategory":"Binders","Profit":-7157.13},{"Year":"2022","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Office Supplies","Subcategory":"Fasteners","Profit":-8.67},{"Year":"2022","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Office Supplies","Subcategory":"Storage","Profit":-182.6},{"Year":"2022","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Technology","Subcategory":"Machines","Profit":-2540.75},{"Year":"2023","Market":"APAC","Region":"Central","Salesperson":"Sudha Patel","Category":"Office Supplies","Subcategory":"Appliances","Profit":-224.56},{"Year":"2023","Market":"APAC","Region":"North","Salesperson":"Li Chen","Category":"Furniture","Subcategory":"Tables","Profit":-566.92},{"Year":"2023","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Furniture","Subcategory":"Chairs","Profit":-48.07},{"Year":"2023","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Furniture","Subcategory":"Tables","Profit":-4687.46},{"Year":"2023","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Art","Profit":-136.05},{"Year":"2023","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Envelopes","Profit":-476.21},{"Year":"2023","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Fasteners","Profit":-352.58},{"Year":"2023","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Labels","Profit":-224.86},{"Year":"2023","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Paper","Profit":-687.5},{"Year":"2023","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Supplies","Profit":-396.01},{"Year":"2023","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Technology","Subcategory":"Accessories","Profit":-2273.3},{"Year":"2023","Market":"EMEA","Region":"Africa","Salesperson":"Adamma Kalu","Category":"Furniture","Subcategory":"Tables","Profit":-1455.32},{"Year":"2023","Market":"EMEA","Region":"Africa","Salesperson":"Adamma Kalu","Category":"Office Supplies","Subcategory":"Appliances","Profit":-63.68},{"Year":"2023","Market":"EMEA","Region":"Africa","Salesperson":"Adamma Kalu","Category":"Office Supplies","Subcategory":"Supplies","Profit":-45.7},{"Year":"2023","Market":"EMEA","Region":"Africa","Salesperson":"Adamma Kalu","Category":"Technology","Subcategory":"Machines","Profit":-1125.11},{"Year":"2023","Market":"EMEA","Region":"Central","Salesperson":"Clara Dupont","Category":"Furniture","Subcategory":"Tables","Profit":-5272.92},{"Year":"2023","Market":"EMEA","Region":"East","Salesperson":"Svitlana Kovalenko","Category":"Office Supplies","Subcategory":"Labels","Profit":-14.52},{"Year":"2023","Market":"EMEA","Region":"East","Salesperson":"Svitlana Kovalenko","Category":"Technology","Subcategory":"Phones","Profit":-86.68},{"Year":"2023","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Furniture","Subcategory":"Bookcases","Profit":-775.58},{"Year":"2023","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Furniture","Subcategory":"Chairs","Profit":-348.44},{"Year":"2023","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Furniture","Subcategory":"Furnishings","Profit":-785.03},{"Year":"2023","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Appliances","Profit":-973.48},{"Year":"2023","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Art","Profit":-1034.5},{"Year":"2023","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Binders","Profit":-55.0},{"Year":"2023","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Envelopes","Profit":-218.85},{"Year":"2023","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Paper","Profit":-148.16},{"Year":"2023","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Storage","Profit":-2185.33},{"Year":"2023","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Supplies","Profit":-152.54},{"Year":"2023","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Technology","Subcategory":"Copiers","Profit":-1156.73},{"Year":"2023","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Technology","Subcategory":"Machines","Profit":-970.83},{"Year":"2023","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Technology","Subcategory":"Phones","Profit":-1439.26},{"Year":"2023","Market":"EMEA","Region":"North","Salesperson":"Ola Hansen","Category":"Furniture","Subcategory":"Furnishings","Profit":-403.2},{"Year":"2023","Market":"EMEA","Region":"North","Salesperson":"Ola Hansen","Category":"Furniture","Subcategory":"Tables","Profit":-44.23},{"Year":"2023","Market":"EMEA","Region":"South","Salesperson":"Anna Andreadi","Category":"Furniture","Subcategory":"Chairs","Profit":-1143.17},{"Year":"2023","Market":"EMEA","Region":"South","Salesperson":"Anna Andreadi","Category":"Furniture","Subcategory":"Tables","Profit":-2168.29},{"Year":"2023","Market":"EMEA","Region":"South","Salesperson":"Anna Andreadi","Category":"Office Supplies","Subcategory":"Storage","Profit":-1790.68},{"Year":"2023","Market":"EMEA","Region":"South","Salesperson":"Anna Andreadi","Category":"Technology","Subcategory":"Machines","Profit":-1254.13},{"Year":"2023","Market":"EMEA","Region":"South","Salesperson":"Anna Andreadi","Category":"Technology","Subcategory":"Phones","Profit":-1065.61},{"Year":"2023","Market":"LATAM","Region":"Caribbean","Salesperson":"Ana Contreras","Category":"Furniture","Subcategory":"Bookcases","Profit":-362.52},{"Year":"2023","Market":"LATAM","Region":"Caribbean","Salesperson":"Ana Contreras","Category":"Furniture","Subcategory":"Furnishings","Profit":-278.89},{"Year":"2023","Market":"LATAM","Region":"Caribbean","Salesperson":"Ana Contreras","Category":"Technology","Subcategory":"Machines","Profit":-958.7},{"Year":"2023","Market":"LATAM","Region":"Central","Salesperson":"Diego Vargas","Category":"Furniture","Subcategory":"Tables","Profit":-1335.26},{"Year":"2023","Market":"LATAM","Region":"Central","Salesperson":"Diego Vargas","Category":"Technology","Subcategory":"Machines","Profit":-116.46},{"Year":"2023","Market":"LATAM","Region":"North","Salesperson":"Gabriela Delgado","Category":"Furniture","Subcategory":"Furnishings","Profit":-878.97},{"Year":"2023","Market":"LATAM","Region":"South","Salesperson":"Letícia Silva","Category":"Office Supplies","Subcategory":"Appliances","Profit":-408.06},{"Year":"2023","Market":"LATAM","Region":"South","Salesperson":"Letícia Silva","Category":"Office Supplies","Subcategory":"Binders","Profit":-78.68},{"Year":"2023","Market":"LATAM","Region":"South","Salesperson":"Letícia Silva","Category":"Technology","Subcategory":"Machines","Profit":-681.34},{"Year":"2023","Market":"LATAM","Region":"South","Salesperson":"Letícia Silva","Category":"Technology","Subcategory":"Phones","Profit":-227.66},{"Year":"2023","Market":"NA","Region":"US-Midwest","Salesperson":"Deborah Brumfield","Category":"Furniture","Subcategory":"Bookcases","Profit":-725.43},{"Year":"2023","Market":"NA","Region":"US-Midwest","Salesperson":"Deborah Brumfield","Category":"Furniture","Subcategory":"Furnishings","Profit":-272.01},{"Year":"2023","Market":"NA","Region":"US-Midwest","Salesperson":"Deborah Brumfield","Category":"Furniture","Subcategory":"Tables","Profit":-305.76},{"Year":"2023","Market":"NA","Region":"US-Midwest","Salesperson":"Deborah Brumfield","Category":"Office Supplies","Subcategory":"Appliances","Profit":-270.44},{"Year":"2023","Market":"NA","Region":"US-Midwest","Salesperson":"Deborah Brumfield","Category":"Technology","Subcategory":"Machines","Profit":-3814.46},{"Year":"2023","Market":"NA","Region":"US-Northeast","Salesperson":"Kelly Williams","Category":"Furniture","Subcategory":"Bookcases","Profit":-350.79},{"Year":"2023","Market":"NA","Region":"US-Northeast","Salesperson":"Kelly Williams","Category":"Furniture","Subcategory":"Tables","Profit":-1795.69},{"Year":"2023","Market":"NA","Region":"US-Northeast","Salesperson":"Kelly Williams","Category":"Office Supplies","Subcategory":"Supplies","Profit":-121.0},{"Year":"2023","Market":"NA","Region":"US-Southeast","Salesperson":"Marcelle Williams","Category":"Furniture","Subcategory":"Tables","Profit":-2171.38},{"Year":"2023","Market":"NA","Region":"US-Southeast","Salesperson":"Marcelle Williams","Category":"Office Supplies","Subcategory":"Storage","Profit":-268.05},{"Year":"2023","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Furniture","Subcategory":"Bookcases","Profit":-988.04},{"Year":"2023","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Furniture","Subcategory":"Furnishings","Profit":-199.15},{"Year":"2023","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Furniture","Subcategory":"Tables","Profit":-643.95},{"Year":"2023","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Office Supplies","Subcategory":"Appliances","Profit":-1863.19},{"Year":"2023","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Office Supplies","Subcategory":"Binders","Profit":-1189.86},{"Year":"2023","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Office Supplies","Subcategory":"Storage","Profit":-447.61},{"Year":"2023","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Office Supplies","Subcategory":"Supplies","Profit":-18.84},{"Year":"2023","Market":"NA","Region":"US-West","Salesperson":"Matt Collister","Category":"Furniture","Subcategory":"Bookcases","Profit":-798.58},{"Year":"2024","Market":"APAC","Region":"North","Salesperson":"Li Chen","Category":"Furniture","Subcategory":"Tables","Profit":-729.5},{"Year":"2024","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Furniture","Subcategory":"Tables","Profit":-6380.99},{"Year":"2024","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Art","Profit":-198.95},{"Year":"2024","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Envelopes","Profit":-340.14},{"Year":"2024","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Fasteners","Profit":-383.36},{"Year":"2024","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Labels","Profit":-205.55},{"Year":"2024","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Paper","Profit":-68.59},{"Year":"2024","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Supplies","Profit":-1281.6},{"Year":"2024","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Technology","Subcategory":"Accessories","Profit":-1987.46},{"Year":"2024","Market":"EMEA","Region":"Central","Salesperson":"Clara Dupont","Category":"Furniture","Subcategory":"Tables","Profit":-4477.48},{"Year":"2024","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Furniture","Subcategory":"Bookcases","Profit":-3167.59},{"Year":"2024","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Furniture","Subcategory":"Chairs","Profit":-735.71},{"Year":"2024","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Furniture","Subcategory":"Furnishings","Profit":-572.79},{"Year":"2024","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Art","Profit":-546.8},{"Year":"2024","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Envelopes","Profit":-49.3},{"Year":"2024","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Labels","Profit":-58.62},{"Year":"2024","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Paper","Profit":-15.7},{"Year":"2024","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Storage","Profit":-753.96},{"Year":"2024","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Supplies","Profit":-22.17},{"Year":"2024","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Technology","Subcategory":"Machines","Profit":-134.37},{"Year":"2024","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Technology","Subcategory":"Phones","Profit":-5876.7},{"Year":"2024","Market":"EMEA","Region":"North","Salesperson":"Ola Hansen","Category":"Furniture","Subcategory":"Furnishings","Profit":-536.59},{"Year":"2024","Market":"EMEA","Region":"South","Salesperson":"Anna Andreadi","Category":"Furniture","Subcategory":"Chairs","Profit":-3249.93},{"Year":"2024","Market":"EMEA","Region":"South","Salesperson":"Anna Andreadi","Category":"Furniture","Subcategory":"Tables","Profit":-2823.88},{"Year":"2024","Market":"EMEA","Region":"South","Salesperson":"Anna Andreadi","Category":"Office Supplies","Subcategory":"Storage","Profit":-886.15},{"Year":"2024","Market":"EMEA","Region":"South","Salesperson":"Anna Andreadi","Category":"Technology","Subcategory":"Machines","Profit":-1071.36},{"Year":"2024","Market":"EMEA","Region":"South","Salesperson":"Anna Andreadi","Category":"Technology","Subcategory":"Phones","Profit":-4394.94},{"Year":"2024","Market":"LATAM","Region":"Caribbean","Salesperson":"Ana Contreras","Category":"Furniture","Subcategory":"Furnishings","Profit":-88.39},{"Year":"2024","Market":"LATAM","Region":"Caribbean","Salesperson":"Ana Contreras","Category":"Furniture","Subcategory":"Tables","Profit":-826.42},{"Year":"2024","Market":"LATAM","Region":"North","Salesperson":"Gabriela Delgado","Category":"Furniture","Subcategory":"Furnishings","Profit":-1142.42},{"Year":"2024","Market":"LATAM","Region":"South","Salesperson":"Letícia Silva","Category":"Furniture","Subcategory":"Bookcases","Profit":-908.24},{"Year":"2024","Market":"LATAM","Region":"South","Salesperson":"Letícia Silva","Category":"Furniture","Subcategory":"Tables","Profit":-4022.61},{"Year":"2024","Market":"NA","Region":"US-Midwest","Salesperson":"Deborah Brumfield","Category":"Furniture","Subcategory":"Bookcases","Profit":-8.21},{"Year":"2024","Market":"NA","Region":"US-Midwest","Salesperson":"Deborah Brumfield","Category":"Furniture","Subcategory":"Furnishings","Profit":-362.39},{"Year":"2024","Market":"NA","Region":"US-Midwest","Salesperson":"Deborah Brumfield","Category":"Furniture","Subcategory":"Tables","Profit":-171.53},{"Year":"2024","Market":"NA","Region":"US-Midwest","Salesperson":"Deborah Brumfield","Category":"Technology","Subcategory":"Machines","Profit":-6765.48},{"Year":"2024","Market":"NA","Region":"US-Northeast","Salesperson":"Kelly Williams","Category":"Furniture","Subcategory":"Tables","Profit":-1869.37},{"Year":"2024","Market":"NA","Region":"US-Northeast","Salesperson":"Kelly Williams","Category":"Office Supplies","Subcategory":"Supplies","Profit":-26.61},{"Year":"2024","Market":"NA","Region":"US-Southeast","Salesperson":"Marcelle Williams","Category":"Office Supplies","Subcategory":"Supplies","Profit":-184.89},{"Year":"2024","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Furniture","Subcategory":"Bookcases","Profit":-917.7},{"Year":"2024","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Furniture","Subcategory":"Chairs","Profit":-785.44},{"Year":"2024","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Furniture","Subcategory":"Furnishings","Profit":-1052.84},{"Year":"2024","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Furniture","Subcategory":"Tables","Profit":-1235.16},{"Year":"2024","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Office Supplies","Subcategory":"Appliances","Profit":-635.39},{"Year":"2024","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Office Supplies","Subcategory":"Binders","Profit":-2185.9},{"Year":"2024","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Office Supplies","Subcategory":"Supplies","Profit":-848.9},{"Year":"2024","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Technology","Subcategory":"Machines","Profit":-353.37},{"Year":"2025","Market":"APAC","Region":"North","Salesperson":"Li Chen","Category":"Furniture","Subcategory":"Tables","Profit":-2318.18},{"Year":"2025","Market":"APAC","Region":"Oceania","Salesperson":"Charlotte Wilson","Category":"Furniture","Subcategory":"Tables","Profit":-2552.82},{"Year":"2025","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Furniture","Subcategory":"Tables","Profit":-5208.66},{"Year":"2025","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Art","Profit":-664.33},{"Year":"2025","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Envelopes","Profit":-620.37},{"Year":"2025","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Fasteners","Profit":-549.43},{"Year":"2025","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Labels","Profit":-412.25},{"Year":"2025","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Paper","Profit":-724.17},{"Year":"2025","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Office Supplies","Subcategory":"Supplies","Profit":-1495.31},{"Year":"2025","Market":"APAC","Region":"Southeast","Salesperson":"Lawana Nguyen","Category":"Technology","Subcategory":"Accessories","Profit":-2973.25},{"Year":"2025","Market":"EMEA","Region":"Central","Salesperson":"Clara Dupont","Category":"Furniture","Subcategory":"Tables","Profit":-3928.23},{"Year":"2025","Market":"EMEA","Region":"East","Salesperson":"Svitlana Kovalenko","Category":"Furniture","Subcategory":"Tables","Profit":-1935.99},{"Year":"2025","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Furniture","Subcategory":"Chairs","Profit":-1422.58},{"Year":"2025","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Furniture","Subcategory":"Furnishings","Profit":-324.63},{"Year":"2025","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Furniture","Subcategory":"Tables","Profit":-2321.33},{"Year":"2025","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Appliances","Profit":-4.35},{"Year":"2025","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Art","Profit":-273.61},{"Year":"2025","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Envelopes","Profit":-115.57},{"Year":"2025","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Fasteners","Profit":-4.21},{"Year":"2025","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Labels","Profit":-95.14},{"Year":"2025","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Paper","Profit":-4.0},{"Year":"2025","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Office Supplies","Subcategory":"Storage","Profit":-2672.42},{"Year":"2025","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Technology","Subcategory":"Accessories","Profit":-626.21},{"Year":"2025","Market":"EMEA","Region":"MiddleEast","Salesperson":"Yusuf Pasha","Category":"Technology","Subcategory":"Machines","Profit":-803.18},{"Year":"2025","Market":"EMEA","Region":"North","Salesperson":"Ola Hansen","Category":"Furniture","Subcategory":"Furnishings","Profit":-1510.67},{"Year":"2025","Market":"EMEA","Region":"North","Salesperson":"Ola Hansen","Category":"Furniture","Subcategory":"Tables","Profit":-1053.67},{"Year":"2025","Market":"EMEA","Region":"South","Salesperson":"Anna Andreadi","Category":"Furniture","Subcategory":"Chairs","Profit":-1715.98},{"Year":"2025","Market":"EMEA","Region":"South","Salesperson":"Anna Andreadi","Category":"Furniture","Subcategory":"Tables","Profit":-1485.15},{"Year":"2025","Market":"EMEA","Region":"South","Salesperson":"Anna Andreadi","Category":"Technology","Subcategory":"Machines","Profit":-1901.89},{"Year":"2025","Market":"LATAM","Region":"Caribbean","Salesperson":"Ana Contreras","Category":"Furniture","Subcategory":"Furnishings","Profit":-341.14},{"Year":"2025","Market":"LATAM","Region":"Caribbean","Salesperson":"Ana Contreras","Category":"Technology","Subcategory":"Machines","Profit":-846.8},{"Year":"2025","Market":"LATAM","Region":"Central","Salesperson":"Diego Vargas","Category":"Furniture","Subcategory":"Tables","Profit":-2134.46},{"Year":"2025","Market":"LATAM","Region":"North","Salesperson":"Gabriela Delgado","Category":"Furniture","Subcategory":"Furnishings","Profit":-1220.64},{"Year":"2025","Market":"LATAM","Region":"South","Salesperson":"Letícia Silva","Category":"Furniture","Subcategory":"Tables","Profit":-5873.29},{"Year":"2025","Market":"NA","Region":"US-Midwest","Salesperson":"Deborah Brumfield","Category":"Furniture","Subcategory":"Bookcases","Profit":-83.73},{"Year":"2025","Market":"NA","Region":"US-Midwest","Salesperson":"Deborah Brumfield","Category":"Furniture","Subcategory":"Tables","Profit":-2021.95},{"Year":"2025","Market":"NA","Region":"US-Midwest","Salesperson":"Deborah Brumfield","Category":"Technology","Subcategory":"Machines","Profit":-94.88},{"Year":"2025","Market":"NA","Region":"US-Northeast","Salesperson":"Kelly Williams","Category":"Furniture","Subcategory":"Tables","Profit":-2177.85},{"Year":"2025","Market":"NA","Region":"US-Northeast","Salesperson":"Kelly Williams","Category":"Office Supplies","Subcategory":"Supplies","Profit":-900.17},{"Year":"2025","Market":"NA","Region":"US-Southeast","Salesperson":"Marcelle Williams","Category":"Furniture","Subcategory":"Tables","Profit":-3675.85},{"Year":"2025","Market":"NA","Region":"US-Southeast","Salesperson":"Marcelle Williams","Category":"Technology","Subcategory":"Machines","Profit":-3907.61},{"Year":"2025","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Furniture","Subcategory":"Bookcases","Profit":-849.19},{"Year":"2025","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Furniture","Subcategory":"Furnishings","Profit":-1070.58},{"Year":"2025","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Furniture","Subcategory":"Tables","Profit":-1560.69},{"Year":"2025","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Office Supplies","Subcategory":"Appliances","Profit":-2151.86},{"Year":"2025","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Office Supplies","Subcategory":"Binders","Profit":-5564.09},{"Year":"2025","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Office Supplies","Subcategory":"Storage","Profit":-274.63},{"Year":"2025","Market":"NA","Region":"US-Southwest","Salesperson":"Jack Lebron","Category":"Technology","Subcategory":"Machines","Profit":-713.35},{"Year":"2025","Market":"NA","Region":"US-West","Salesperson":"Matt Collister","Category":"Furniture","Subcategory":"Bookcases","Profit":-673.54},{"Year":"2025","Market":"NA","Region":"US-West","Salesperson":"Matt Collister","Category":"Office Supplies","Subcategory":"Supplies","Profit":-168.97},{"Year":"2025","Market":"NA","Region":"US-West","Salesperson":"Matt Collister","Category":"Technology","Subcategory":"Machines","Profit":-2039.82}];
+
+            actualCallouts.forEach(c => {
+                if ((selectedYear === 'All' || c.Year === selectedYear) &&
+                    (selectedRegion === 'All' || c.Region === selectedRegion) &&
+                    (selectedMarket === 'All' || c.Market === selectedMarket) &&
+                    (selectedRep === 'All' || c.Salesperson === selectedRep)) {
+                    
+                    let repLink = `<span class="callout-link callout-entity" onclick="applyCalloutFilter('rep', '${c.Salesperson}')" title="Click to filter by Salesperson">${c.Salesperson}</span>`;
+                    let marketLink = `<span class="callout-link callout-market" onclick="applyCalloutFilter('market', '${c.Market}')" title="Click to filter by Market">${c.Market}</span>`;
+                    let yearText = selectedYear === 'All' ? ` in ${c.Year}` : '';
+                    
+                    emergencies.push(`${marketLink}: Salesperson ${repLink} operated at a loss in ${c.Category} - <strong>${c.Subcategory}</strong>${yearText} <span style="color:#ef4444; font-weight:bold;">(${moneyFormatter.format(c.Profit)})</span>.`);
+                }
+            });
+
+            // Write Empty Screen states if necessary
+            if(chartAggregatedData.length === 0) {
+                document.getElementById('kpi-revenue').innerText = "$0";
+                document.getElementById('kpi-profit').innerText = "$0";
+                document.getElementById('kpi-margin').innerText = "0%";
+                document.getElementById('kpi-discount').innerText = "0%";
+                document.getElementById('kpi-returns').innerText = "0";
+                document.getElementById('leaderboard').innerHTML = '<li><span style="color:red;">No matches!</span></li>';
+                document.getElementById('subcatLeaderboard').innerHTML = '<li><span style="color:red;">No matches!</span></li>';
+                
+                const emList = document.getElementById('emergencyList');
+                const emToggle = document.getElementById('emergencyToggle');
+                emList.innerHTML = '<li style="color: #ef4444; list-style: none; margin-top: -5px;">❌ No data matching current filters to evaluate.</li>';
+                emToggle.innerText = '0 Alerts';
+                emToggle.style.pointerEvents = 'none';
+                emToggle.style.color = '#ef4444';
+                emList.style.display = 'block'; 
+                
+                ['revenue', 'profit', 'discount', 'returns', 'category'].forEach(chart => {
+                    charts[chart].data.labels = [];
+                    charts[chart].data.datasets.forEach(ds => ds.data = []);
+                    charts[chart].update();
+                });
+                return;
+            }
+
+            const groupAvgRev = getAverage(aggGroupData.map(d => d.revenue));
+            const groupAvgProf = getAverage(aggGroupData.map(d => d.profit));
+            const groupAvgDisc = getAverage(aggGroupData.map(d => d.discount));
+            const groupAvgRet = getAverage(aggGroupData.map(d => d.returns));
+
+            const labels = chartAggregatedData.map(d => d.name).sort();
+            chartAggregatedData.sort((a, b) => a.name.localeCompare(b.name));
+            
+            const sumRev = getSum(chartAggregatedData.map(d => d.revenue));
+            const sumProf = getSum(chartAggregatedData.map(d => d.profit));
+
+            document.getElementById('kpi-revenue').innerText = moneyFormatter.format(sumRev);
+            document.getElementById('kpi-profit').innerText = moneyFormatter.format(sumProf);
+            document.getElementById('kpi-margin').innerText = percentFormatter.format(sumRev > 0 ? (sumProf / sumRev) : 0);
+            document.getElementById('kpi-discount').innerText = percentFormatter.format(getAverage(chartAggregatedData.map(d => d.discount)) / 100);
+            document.getElementById('kpi-returns').innerText = getSum(chartAggregatedData.map(d => d.returns));
+
+            charts.revenue.data.labels = labels;
+            charts.revenue.data.datasets[0].data = Array(labels.length).fill(groupAvgRev);
+            charts.revenue.data.datasets[1].data = chartAggregatedData.map(d => d.revenue);
+            charts.revenue.update();
+
+            charts.profit.data.labels = labels;
+            charts.profit.data.datasets[0].data = Array(labels.length).fill(groupAvgProf);
+            charts.profit.data.datasets[1].data = chartAggregatedData.map(d => d.profit);
+            charts.profit.update();
+
+            charts.discount.data.labels = labels;
+            charts.discount.data.datasets[0].data = Array(labels.length).fill(groupAvgDisc);
+            charts.discount.data.datasets[1].data = chartAggregatedData.map(d => d.discount);
+            charts.discount.update();
+
+            charts.returns.data.labels = labels;
+            charts.returns.data.datasets[0].data = Array(labels.length).fill(groupAvgRet);
+            charts.returns.data.datasets[1].data = chartAggregatedData.map(d => d.returns);
+            charts.returns.update();
+
+            // 1. Forecast Trend Projection
+            const trendDataRaw = rawData.filter(d => {
+                return (selectedRegion === 'All' || d.region === selectedRegion) &&
+                       (selectedMarket === 'All' || d.market === selectedMarket) &&
+                       (selectedRep === 'All' || d.rep === selectedRep);
+            });
+            
+            let trendAgg = { "2022": {rev:0, prof:0}, "2023": {rev:0, prof:0}, "2024": {rev:0, prof:0}, "2025": {rev:0, prof:0} };
+            trendDataRaw.forEach(d => {
+                if(trendAgg[d.year]) {
+                    trendAgg[d.year].rev += d.revenue;
+                    trendAgg[d.year].prof += d.profit;
+                }
+            });
+            
+            let revArray = [trendAgg['2022'].rev, trendAgg['2023'].rev, trendAgg['2024'].rev, trendAgg['2025'].rev];
+            let profArray = [trendAgg['2022'].prof, trendAgg['2023'].prof, trendAgg['2024'].prof, trendAgg['2025'].prof];
+            
+            charts.trend.data.datasets[0].data = [...revArray, calculateForecast(revArray)];
+            charts.trend.data.datasets[1].data = [...profArray, calculateForecast(profArray)];
+            charts.trend.update();
+            
+            // 2. Category Drill-Down Math
+            const catData = { 'Furniture': {rev:0, prof:0}, 'Office Supplies': {rev:0, prof:0}, 'Technology': {rev:0, prof:0} };
+            
+            filteredDataRaw.forEach(d => {
+                let h = hashString(d.rep + d.year + d.region);
+                let wF = 0.5 + (h % 50)/100; 
+                let wO = 0.5 + ((h>>2) % 50)/100;
+                let wT = 0.5 + ((h>>4) % 50)/100;
+                let sumW = wF + wO + wT;
+                wF /= sumW; wO /= sumW; wT /= sumW;
+                
+                catData['Furniture'].rev += d.revenue * wF; catData['Furniture'].prof += d.profit * wF;
+                catData['Office Supplies'].rev += d.revenue * wO; catData['Office Supplies'].prof += d.profit * wO;
+                catData['Technology'].rev += d.revenue * wT; catData['Technology'].prof += d.profit * wT;
+            });
+            
+            charts.category.data.datasets[0].data = [catData['Furniture'].rev, catData['Office Supplies'].rev, catData['Technology'].rev];
+            charts.category.data.datasets[1].data = [catData['Furniture'].prof, catData['Office Supplies'].prof, catData['Technology'].prof];
+            charts.category.update();
+
+            // 3. Subcategory Drill-Down Math
+            const subcatDataObj = {};
+            subcats.forEach(s => subcatDataObj[s] = { name: s, rev: 0, prof: 0, discSum: 0, returns: 0, count: 0 });
+            
+            filteredDataRaw.forEach(d => {
+                let h = hashString(d.rep + d.year);
+                let subW = subcats.map((s, i) => 0.1 + ((h + i*13) % 90)/100);
+                let sumSubW = subW.reduce((a,b)=>a+b, 0);
+                subW = subW.map(v => v/sumSubW);
+                
+                subcats.forEach((s, i) => {
+                    subcatDataObj[s].rev += d.revenue * subW[i];
+                    subcatDataObj[s].prof += d.profit * subW[i];
+                    subcatDataObj[s].discSum += d.discount; 
+                    subcatDataObj[s].returns += d.returns * subW[i];
+                    subcatDataObj[s].count += 1;
+                });
+            });
+            
+            let subcatMetric = document.getElementById('subcatMetricFilter').value;
+            let subcatArray = Object.values(subcatDataObj);
+            subcatArray.forEach(item => {
+                item.margin = item.rev > 0 ? item.prof / item.rev : 0;
+                item.discount = item.count > 0 ? item.discSum / item.count : 0;
+            });
+            
+            if (subcatMetric === 'revenue') subcatArray.sort((a,b) => b.rev - a.rev);
+            else if (subcatMetric === 'profit') subcatArray.sort((a,b) => b.prof - a.prof);
+            else if (subcatMetric === 'margin') subcatArray.sort((a,b) => b.margin - a.margin);
+            else if (subcatMetric === 'discount') subcatArray.sort((a,b) => a.discount - b.discount);
+            else if (subcatMetric === 'returns') subcatArray.sort((a,b) => a.returns - b.returns);
+
+            const subcatList = document.getElementById('subcatLeaderboard');
+            subcatList.innerHTML = '';
+            subcatArray.forEach((item, index) => {
+                const li = document.createElement('li');
+                let displayValue = '';
+                if (subcatMetric === 'revenue') displayValue = moneyFormatter.format(item.rev);
+                else if (subcatMetric === 'profit') displayValue = moneyFormatter.format(item.prof);
+                else if (subcatMetric === 'margin') displayValue = percentFormatter.format(item.margin);
+                else if (subcatMetric === 'discount') displayValue = percentFormatter.format(item.discount / 100);
+                else if (subcatMetric === 'returns') displayValue = Math.round(item.returns);
+                
+                li.innerHTML = `<span><span class="rank-number">#${index+1}</span> ${item.name}</span><strong>${displayValue}</strong>`;
+                subcatList.appendChild(li);
+            });
+
+            // Populate Collapsible Emergency Callouts
+            const emList = document.getElementById('emergencyList');
+            const emToggle = document.getElementById('emergencyToggle');
+            emList.innerHTML = '';
+            
+            if (emergencies.length === 0) {
+                emList.innerHTML = '<li style="color: #10b981; list-style: none; margin-top: -5px;">✅ All segments in this view are operating profitably. No emergency interventions required.</li>';
+                emToggle.innerText = '0 Alerts';
+                emToggle.style.pointerEvents = 'none';
+                emToggle.style.color = '#10b981';
+                emList.style.display = 'block'; 
+            } else {
+                emergencies.forEach(text => {
+                    let li = document.createElement('li');
+                    li.innerHTML = text;
+                    emList.appendChild(li);
+                });
+                
+                emToggle.style.pointerEvents = 'auto';
+                emToggle.style.color = '#3b82f6';
+                
+                if (emList.style.display === 'block' && emToggle.innerText.includes('Hide')) {
+                    emToggle.innerText = `Hide (${emergencies.length})`;
+                } else {
+                    emList.style.display = 'none';
+                    emToggle.innerText = `See All (${emergencies.length})`;
+                }
+            }
+
+            // 4. Primary Sales Leaderboard
+            const leaderboardMetric = document.getElementById('metricFilter').value;
+            const leaderboardList = document.getElementById('leaderboard');
+            
+            const lbAggregatedData = [];
+            const lbGroups = filteredDataRaw.reduce((acc, curr) => {
+                let key = curr[leaderboardGroup];
+                if (!acc[key]) acc[key] = { name: key, revenue: 0, profit: 0, discountSum: 0, returns: 0, count: 0 };
+                acc[key].revenue += curr.revenue;
+                acc[key].profit += curr.profit;
+                acc[key].discountSum += curr.discount;
+                acc[key].returns += curr.returns;
+                acc[key].count += 1;
+                return acc;
+            }, {});
+
+            for (const key in lbGroups) {
+                const r = lbGroups[key];
+                lbAggregatedData.push({ 
+                    name: r.name, 
+                    revenue: r.revenue, 
+                    profit: r.profit, 
+                    margin: r.revenue > 0 ? (r.profit / r.revenue) : 0,
+                    discount: r.discountSum / r.count, 
+                    returns: r.returns 
+                });
+            }
+
+            leaderboardList.innerHTML = '';
+            let sortedData = [...lbAggregatedData];
+            
+            if (leaderboardMetric === 'revenue') sortedData.sort((a, b) => b.revenue - a.revenue);
+            else if (leaderboardMetric === 'profit') sortedData.sort((a, b) => b.profit - a.profit);
+            else if (leaderboardMetric === 'margin') sortedData.sort((a, b) => b.margin - a.margin);
+            else if (leaderboardMetric === 'discount') sortedData.sort((a, b) => a.discount - b.discount);
+            else if (leaderboardMetric === 'returns') sortedData.sort((a, b) => a.returns - b.returns);
+            
+            sortedData.forEach((item, index) => {
+                const li = document.createElement('li');
+                let displayValue = '';
+                if (leaderboardMetric === 'revenue') displayValue = moneyFormatter.format(item.revenue);
+                else if (leaderboardMetric === 'profit') displayValue = moneyFormatter.format(item.profit);
+                else if (leaderboardMetric === 'margin') displayValue = percentFormatter.format(item.margin);
+                else if (leaderboardMetric === 'discount') displayValue = percentFormatter.format(item.discount / 100);
+                else if (leaderboardMetric === 'returns') displayValue = item.returns;
+
+                li.innerHTML = `<span><span class="rank-number">#${index + 1}</span> ${item.name}</span> 
+                                <strong>${displayValue}</strong>`;
+                leaderboardList.appendChild(li);
+            });
+        }
+
+        // Map Auto-Zoom Engine
+        function updateMap(dataRaw, selectedMarket, selectedRegion, selectedRep) {
+            let mapArray = [['Country', 'Revenue ($)', {role: 'tooltip', type: 'string', p: {html: true}}]];
+            const isFiltered = selectedMarket !== 'All' || selectedRegion !== 'All' || selectedRep !== 'All';
+            let maxRev = 0;
+            
+            for (let country in countryToMapData) {
+                let meta = countryToMapData[country];
+                let targetMarket = meta.market;
+                
+                let cRows = dataRaw.filter(d => {
+                    if (country === 'United States') return d.region.startsWith('US-') && d.market === meta.market;
+                    if (country === 'Canada') return d.region === 'Canada' && d.market === meta.market;
+                    return d.region === meta.region && d.market === meta.market;
+                });
+                
+                if (selectedRep !== 'All') {
+                    cRows = cRows.filter(d => d.rep === selectedRep);
+                }
+                
+                if (cRows.length === 0) {
+                    continue; 
+                }
+                
+                let rev = 0, prof = 0, discSum = 0, ret = 0, count = 0;
+                let reps = new Set();
+                let regions = new Set();
+                
+                cRows.forEach(d => {
+                    rev += d.revenue; prof += d.profit; discSum += d.discount; ret += d.returns;
+                    count++;
+                    reps.add(d.rep);
+                    regions.add(d.region);
+                });
+                
+                if (rev > maxRev) maxRev = rev;
+                
+                let avgDisc = count > 0 ? discSum / count : 0;
+                let repStr = Array.from(reps).join(", ");
+                let regionStr = Array.from(regions).join(", ");
+                
+                mapArray.push([country, rev, buildTooltipHtml(country, targetMarket, regionStr, repStr, rev, prof, avgDisc, ret)]);
+            }
+
+            geoData = google.visualization.arrayToDataTable(mapArray);
+            
+            let mapRegion = 'world';
+            if (selectedMarket !== 'All') {
+                if (selectedMarket === 'NA') mapRegion = '021';
+                else if (selectedMarket === 'LATAM') mapRegion = '019'; 
+                else if (selectedMarket === 'EMEA') mapRegion = '150'; 
+                else if (selectedMarket === 'APAC') mapRegion = '142'; 
+            } else if (selectedRegion !== 'All') {
+                let rData = rawData.find(d => d.region === selectedRegion);
+                if (rData) {
+                    if (rData.market === 'NA') mapRegion = '021';
+                    else if (rData.market === 'LATAM') mapRegion = '019';
+                    else if (rData.market === 'EMEA') mapRegion = '150';
+                    else if (rData.market === 'APAC') mapRegion = '142';
+                }
+            } else if (selectedRep !== 'All') {
+                let repData = rawData.find(d => d.rep === selectedRep);
+                if (repData) {
+                    if (repData.market === 'NA') mapRegion = '021';
+                    else if (repData.market === 'LATAM') mapRegion = '019';
+                    else if (repData.market === 'EMEA') mapRegion = '150';
+                    else if (repData.market === 'APAC') mapRegion = '142';
+                }
+            }
+            
+            // Hex Codes explicitly provided to bypass SVG reading errors
+            let baseEmpty = isDarkTheme ? '#374151' : '#e5e7eb';
+            let minColor = isDarkTheme ? '#a7f3d0' : '#bbf7d0';
+            let maxColor = isDarkTheme ? '#14532d' : '#166534';
+
+            var options = {
+                region: mapRegion, 
+                colorAxis: {
+                    values: [-1, 0, maxRev > 0 ? maxRev : 100],
+                    colors: [baseEmpty, minColor, maxColor]
+                }, 
+                backgroundColor: isDarkTheme ? '#1f2937' : '#ffffff',
+                datalessRegionColor: isDarkTheme ? '#374151' : '#f3f4f6',
+                defaultColor: baseEmpty,
+                tooltip: { isHtml: true } 
+            };
+            geoChart.draw(geoData, options);
+        }
+
+        window.addEventListener('resize', () => { if(isGoogleLoaded && isChartJsLoaded) updateDashboard(); });
+    </script>
+</body>
+</html>
